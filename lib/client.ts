@@ -1,0 +1,1 @@
+export async function api<T=unknown>(path:string,method='GET',body?:unknown):Promise<T>{const response=await fetch(`/api/${path}`,{method,headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok)throw new Error(data.error||'연결을 확인해 주세요.');return data;}
