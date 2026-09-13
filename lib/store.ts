@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { Lesson, Profile } from './domain';
+import { firestoreService } from './firestore';
+
+export { firestoreService };
+export { db } from './firebase';
 
 interface StoreAdapter {
   createSession(): string;
@@ -19,6 +23,7 @@ class MemoryStore implements StoreAdapter {
   createSession(): string {
     const userId = randomUUID(), token = randomUUID() + randomUUID();
     this.sessions.set(token, { userId, expires: Date.now() + 30 * 86400000 });
+    void firestoreService.saveSession(token, userId);
     return token;
   }
   sessionUser(token: string): string | undefined {
@@ -28,6 +33,7 @@ class MemoryStore implements StoreAdapter {
   }
   endSession(token: string): void {
     this.sessions.delete(token);
+    void firestoreService.deleteSession(token);
   }
   list<T>(user: string, kind: string): T[] {
     const res: T[] = [];
@@ -43,11 +49,21 @@ class MemoryStore implements StoreAdapter {
   }
   put<T extends { id: string }>(user: string, kind: string, value: T): T {
     this.docs.set(value.id, { userId: user, kind, body: JSON.stringify(value) });
+    if (kind === 'lesson') {
+      void firestoreService.saveLesson(user, value as unknown as Lesson);
+    } else if (kind === 'profile') {
+      void firestoreService.saveProfile(user, value as unknown as Profile);
+    }
     return value;
   }
   remove(user: string, id: string): void {
     const d = this.docs.get(id);
-    if (d && d.userId === user) this.docs.delete(id);
+    if (d && d.userId === user) {
+      this.docs.delete(id);
+      if (d.kind === 'lesson') {
+        void firestoreService.deleteLesson(user, id);
+      }
+    }
   }
   clear(user: string): void {
     for (const [k, d] of this.docs.entries()) {
