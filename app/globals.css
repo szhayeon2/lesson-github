@@ -3,3 +3,25 @@
 @media(min-width:1500px){main{padding-top:45px}.hero{padding:40px}.hero h2{font-size:30px}}
 @media(max-width:1100px){aside{width:205px;padding:28px 16px}.workspace{margin-left:205px;width:calc(100% - 205px)}main{padding:26px}.notebook{display:none}.lesson-grid{grid-template-columns:repeat(2,1fr)}header{padding:0 26px}.hero h2{font-size:23px}}
 @media(max-width:700px){aside{position:fixed;inset:auto 0 0;width:100%;height:70px;padding:5px 8px;z-index:10;border-top:1px solid var(--line)}aside>.brand,.sidebar-caption,.sidebar-note,.account{display:none}nav{display:flex;justify-content:space-around;gap:0}nav button{flex-direction:column;font-size:10px;gap:2px;padding:7px 10px;border-radius:8px;min-width:55px}nav .count{display:none}.workspace{margin:0;width:100%;padding-bottom:75px}header{height:54px;padding:0 18px;font-size:10px}.private{font-size:9px}header .muted{margin-left:8px}main{padding:23px 18px}.page-top{gap:8px}.page-top h1{font-size:23px}.page-top>button{font-size:11px;padding:10px 12px}.hero{padding:23px 20px}.hero h2{font-size:21px}.hero p{font-size:11px}.hero .text-button{margin:10px 0 0}.stats{gap:8px;margin:18px 0 27px}.stats>div{padding:15px 10px}.stats span{font-size:10px}.stats strong{font-size:25px}.stats p{font-size:9px}.lesson-grid{grid-template-columns:1fr}.panel{padding:20px}.columns{gap:10px}.welcome{padding:55px 25px}.welcome h1{font-size:36px}.rating{gap:5px}.rating button{flex:1;min-width:50px;font-size:10px;padding:8px 5px}.form-actions button{width:100%}.bottom-note{font-size:9px}}
+.modal-overlay{position:fixed;inset:0;background:rgba(20,30,25,0.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal{background:white;border:1px solid var(--line);border-radius:16px;max-width:520px;width:100%;padding:26px;box-shadow:0 12px 36px rgba(0,0,0,0.12);animation:popIn .2s ease-out}
+@keyframes popIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+.modal h2{font-size:20px;margin-bottom:6px}
+.modal-subtitle{color:var(--muted);font-size:12px;margin-bottom:18px}
+.modal-list{display:flex;flex-direction:column;gap:10px;margin:18px 0;max-height:300px;overflow-y:auto}
+.modal-item{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:#f9faf7;border:1px solid #e2e8df;border-radius:10px;padding:14px 16px;color:var(--ink);cursor:pointer;transition:all .15s;width:100%}
+.modal-item:hover{background:#edf4ea;border-color:#b8d1b2}
+.modal-item b{font-size:14px;margin-bottom:4px}
+.modal-item small{color:var(--muted);font-size:11px}
+.modal-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+/* 구조화된 심층 수업 회고 스타일 */
+.reflection-section{margin-top:28px;border-top:1px solid var(--line);padding-top:24px}
+.reflection-section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.reflection-section-header h3{margin:0;font-size:18px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.reflection-group{margin-bottom:18px;background:#f8faf9;border:1px solid #dfe5dc;border-radius:10px;overflow:hidden}
+.reflection-header{background:#eff4ec;padding:12px 18px;font-weight:700;color:#2c4b3f;font-size:13px;border-bottom:1px solid #dfe5dc;display:flex;align-items:center;gap:6px}
+.display-box{padding:16px 18px;color:#33423d;line-height:1.65;font-size:13px;white-space:pre-wrap}
+.empty-text{color:#88968e;font-style:italic}
+.edit-group-input{width:100%;min-height:96px;padding:14px 18px;border:none;background:#ffffff;color:var(--ink);font-family:inherit;font-size:13px;line-height:1.65;resize:vertical;display:block;box-sizing:border-box}
+.edit-group-input:focus{outline:none;background:#fbfdf9}
+.reflection-guide{padding:8px 18px;background:#f2f6ee;font-size:11px;color:#667b6b;border-bottom:1px dashed #dce3d8}
