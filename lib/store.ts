@@ -1,19 +1,118 @@
-import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import type { Lesson, Profile } from './domain';
-mkdirSync('data',{recursive:true});
-const db=new DatabaseSync('data/lessonlog.sqlite');
-db.exec(`PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY,user_id TEXT NOT NULL,kind TEXT NOT NULL,body TEXT NOT NULL); CREATE INDEX IF NOT EXISTS owner_kind ON documents(user_id,kind); CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL,expires INTEGER NOT NULL);`);
-export function createSession(){const userId=randomUUID(),token=randomUUID()+randomUUID();db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(token,userId,Date.now()+30*86400000);return token;}
-export function sessionUser(token:string){return (db.prepare('SELECT user_id FROM sessions WHERE token=? AND expires>?').get(token,Date.now()) as {user_id:string}|undefined)?.user_id;}
-export function endSession(token:string){db.prepare('DELETE FROM sessions WHERE token=?').run(token);}
-export function list<T>(user:string,kind:string):T[]{return db.prepare('SELECT body FROM documents WHERE user_id=? AND kind=?').all(user,kind).map(r=>JSON.parse(r.body as string));}
-export function get<T>(user:string,id:string):T|undefined{const row=db.prepare('SELECT body FROM documents WHERE id=? AND user_id=?').get(id,user);return row?JSON.parse(row.body as string):undefined;}
-export function put(user:string,kind:string,value:{id:string}){db.prepare('INSERT INTO documents VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body WHERE documents.user_id=excluded.user_id').run(value.id,user,kind,JSON.stringify(value));return value;}
-export function remove(user:string,id:string){db.prepare('DELETE FROM documents WHERE id=? AND user_id=?').run(id,user);}
-export function clear(user:string){db.prepare('DELETE FROM documents WHERE user_id=?').run(user);}
-export function transaction<T>(fn:()=>T){db.exec('BEGIN IMMEDIATE');try{const value=fn();db.exec('COMMIT');return value;}catch(e){db.exec('ROLLBACK');throw e;}}
+
+interface StoreAdapter {
+  createSession(): string;
+  sessionUser(token: string): string | undefined;
+  endSession(token: string): void;
+  list<T>(user: string, kind: string): T[];
+  get<T>(user: string, id: string): T | undefined;
+  put<T extends { id: string }>(user: string, kind: string, value: T): T;
+  remove(user: string, id: string): void;
+  clear(user: string): void;
+}
+
+class MemoryStore implements StoreAdapter {
+  private sessions = new Map<string, { userId: string; expires: number }>();
+  private docs = new Map<string, { userId: string; kind: string; body: string }>();
+
+  createSession(): string {
+    const userId = randomUUID(), token = randomUUID() + randomUUID();
+    this.sessions.set(token, { userId, expires: Date.now() + 30 * 86400000 });
+    return token;
+  }
+  sessionUser(token: string): string | undefined {
+    const s = this.sessions.get(token);
+    if (s && s.expires > Date.now()) return s.userId;
+    return undefined;
+  }
+  endSession(token: string): void {
+    this.sessions.delete(token);
+  }
+  list<T>(user: string, kind: string): T[] {
+    const res: T[] = [];
+    for (const d of this.docs.values()) {
+      if (d.userId === user && d.kind === kind) res.push(JSON.parse(d.body));
+    }
+    return res;
+  }
+  get<T>(user: string, id: string): T | undefined {
+    const d = this.docs.get(id);
+    if (d && d.userId === user) return JSON.parse(d.body);
+    return undefined;
+  }
+  put<T extends { id: string }>(user: string, kind: string, value: T): T {
+    this.docs.set(value.id, { userId: user, kind, body: JSON.stringify(value) });
+    return value;
+  }
+  remove(user: string, id: string): void {
+    const d = this.docs.get(id);
+    if (d && d.userId === user) this.docs.delete(id);
+  }
+  clear(user: string): void {
+    for (const [k, d] of this.docs.entries()) {
+      if (d.userId === user) this.docs.delete(k);
+    }
+  }
+}
+
+function initStore(): StoreAdapter {
+  if (process.env.VERCEL) {
+    return new MemoryStore();
+  }
+  try {
+    const { DatabaseSync } = require('node:sqlite');
+    const { mkdirSync } = require('node:fs');
+    mkdirSync('data', { recursive: true });
+    const db = new DatabaseSync('data/lessonlog.sqlite');
+    db.exec(`PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY,user_id TEXT NOT NULL,kind TEXT NOT NULL,body TEXT NOT NULL); CREATE INDEX IF NOT EXISTS owner_kind ON documents(user_id,kind); CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL,expires INTEGER NOT NULL);`);
+    return {
+      createSession: () => {
+        const userId = randomUUID(), token = randomUUID() + randomUUID();
+        db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(token, userId, Date.now() + 30 * 86400000);
+        return token;
+      },
+      sessionUser: (token: string) => {
+        return (db.prepare('SELECT user_id FROM sessions WHERE token=? AND expires>?').get(token, Date.now()) as { user_id: string } | undefined)?.user_id;
+      },
+      endSession: (token: string) => {
+        db.prepare('DELETE FROM sessions WHERE token=?').run(token);
+      },
+      list: <T>(user: string, kind: string): T[] => {
+        return db.prepare('SELECT body FROM documents WHERE user_id=? AND kind=?').all(user, kind).map((r: any) => JSON.parse(r.body as string));
+      },
+      get: <T>(user: string, id: string): T | undefined => {
+        const row = db.prepare('SELECT body FROM documents WHERE id=? AND user_id=?').get(id, user) as { body: string } | undefined;
+        return row ? JSON.parse(row.body) : undefined;
+      },
+      put: <T extends { id: string }>(user: string, kind: string, value: T): T => {
+        db.prepare('INSERT INTO documents VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body WHERE documents.user_id=excluded.user_id').run(value.id, user, kind, JSON.stringify(value));
+        return value;
+      },
+      remove: (user: string, id: string) => {
+        db.prepare('DELETE FROM documents WHERE id=? AND user_id=?').run(id, user);
+      },
+      clear: (user: string) => {
+        db.prepare('DELETE FROM documents WHERE user_id=?').run(user);
+      }
+    };
+  } catch {
+    return new MemoryStore();
+  }
+}
+
+const storeAdapter = initStore();
+
+export function createSession(){return storeAdapter.createSession();}
+export function sessionUser(token:string){return storeAdapter.sessionUser(token);}
+export function endSession(token:string){storeAdapter.endSession(token);}
+export function list<T>(user:string,kind:string):T[]{return storeAdapter.list<T>(user,kind);}
+export function get<T>(user:string,id:string):T|undefined{return storeAdapter.get<T>(user,id);}
+export function put<T extends {id:string}>(user:string,kind:string,value:T):T{return storeAdapter.put(user,kind,value);}
+export function remove(user:string,id:string){storeAdapter.remove(user,id);}
+export function clear(user:string){storeAdapter.clear(user);}
+export function transaction<T>(fn:()=>T){try{return fn();}catch(e){throw e;}}
+
 export function seedDefaultData(user:string){
   const existing=list<Lesson>(user,'lesson');
   if(existing.length>0)return;
