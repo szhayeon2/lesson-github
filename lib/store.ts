@@ -31,6 +31,8 @@ export function seedDefaultData(user:string){
       observations:'소외되는 학생 없이 디지털 협업 도구에 참여하는지 관찰',
       tags:'문학, 현대소설, 매체활용, 패들렛',
       status:'reflected',
+      change:'',
+      reason:'',
       reflection:{
         satisfaction:4,
         wentWell:'패들렛을 활용한 인물 관계도 작성이 학생들의 흥미를 유발하는 데 매우 효과적이었음. 시각적으로 인물 간 갈등을 정리하니 이해도가 높아짐.',
@@ -55,6 +57,8 @@ export function seedDefaultData(user:string){
       observations:'모둠 활동 시 소외되는 학생 없이 돌아가며 의견을 내는지 관찰',
       tags:'문학, 비유, 시 창작, 협동학습',
       status:'reflected',
+      change:'',
+      reason:'',
       reflection:{
         satisfaction:5,
         wentWell:'시 낭송 릴레이 활동에서 평소 발표를 주저하던 학생들도 부담 없이 한 줄씩 낭송에 적극적으로 참여함. 3줄 시 쓰기 결과물이 기대 이상으로 창의적이었음.',
@@ -79,6 +83,8 @@ export function seedDefaultData(user:string){
       observations:'통계의 출처와 해석의 차이를 발견하는지 점검',
       tags:'읽기, 비판적 사고, 미디어 리터러시',
       status:'reflected',
+      change:'',
+      reason:'',
       reflection:{
         satisfaction:4,
         wentWell:'실제 뉴스 기사를 다루니 학생들의 몰입도가 매우 높았고 사실과 의견을 구분하는 기준을 스스로 찾아냄.',
@@ -102,7 +108,9 @@ export function seedDefaultData(user:string){
       difficulties:'자신의 주장에 반대되는 입장을 고려하지 못하는 점',
       observations:'피드백을 반영하여 근거를 보완하는지 관찰',
       tags:'쓰기, 논설문, 설득, 동료평가',
-      status:'planned'
+      status:'planned',
+      change:'',
+      reason:''
     }
   ];
   for(const l of samples)put(user,'lesson',l);
