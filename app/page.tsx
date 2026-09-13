@@ -47,7 +47,13 @@ function Editor({lesson,profile,quick,onSave,onError,onCancel}:{lesson:Lesson|nu
     try{
      const data=JSON.parse(cached);
      if(data.draft)setDraft(prev=>({...prev,...data.draft}));
-     if(data.reflection)setReflection(prev=>({...prev,...data.reflection}));
+     if(data.reflection)setReflection(prev=>({
+      ...prev,
+      ...data.reflection,
+      satisfaction: Number(data.reflection.satisfaction) || 4,
+      energy: Number(data.reflection.energy) || 4,
+      emotions: Array.isArray(data.reflection.emotions) ? data.reflection.emotions : []
+     }));
      if(!isNew&&data.id)setId(data.id);
     }catch{}
    }
@@ -101,7 +107,19 @@ function Editor({lesson,profile,quick,onSave,onError,onCancel}:{lesson:Lesson|nu
    const draftPayload={...draft,title:titleToSave};
    let result=await api<Lesson>(id?`lessons/${id}`:'lessons',id?'PUT':'POST',draftPayload);
    setId(result.id);
-   if(quick)result=await api<Lesson>(`lessons/${result.id}/reflection`,'PUT',reflection);
+   if(quick){
+    const cleanReflection: Reflection = {
+     satisfaction: Number(reflection.satisfaction) || 4,
+     wentWell: String(reflection.wentWell || ''),
+     unexpected: String(reflection.unexpected || ''),
+     difficulties: String(reflection.difficulties || ''),
+     nextChange: String(reflection.nextChange || ''),
+     note: String(reflection.note || ''),
+     emotions: Array.isArray(reflection.emotions) ? reflection.emotions : [],
+     energy: Number(reflection.energy) || 4
+    };
+    result=await api<Lesson>(`lessons/${result.id}/reflection`,'PUT',cleanReflection);
+   }
    sessionStorage.removeItem(key);
    if(isNew){
     sessionStorage.removeItem('lessonlog-draft-new');
